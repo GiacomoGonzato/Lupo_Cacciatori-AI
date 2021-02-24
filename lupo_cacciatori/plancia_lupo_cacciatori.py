@@ -5,7 +5,7 @@ def ordine():
         for j in range(8):
             if (i+j) % 2 == 1:
                 scacchiera[i][j] = '#'
-    scacchiera[6][4] = 'X'
+    scacchiera[0][4] = 'X'
     return scacchiera
 
 
