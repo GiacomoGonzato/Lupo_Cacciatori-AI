@@ -13,6 +13,10 @@ def str_to_tupla_coo(stringa):
         return tuple(num)
 
 
+def distanza_posizioni(coo1, coo2):
+    return abs(coo1[0] - coo2[0]) + abs(coo1[1] - coo2[1])
+
+
 class lupo_cacciatori():
     def __init__(self, lato=2):
         self.plancia = plancia(lato)
@@ -22,7 +26,7 @@ class lupo_cacciatori():
         self.plancia.reset()
 
     # Logica di gioco
-    def play(self, deep=6):
+    def play(self, profondita=4):
         contatore = 0
         computer = 'entra nel loop'
         while computer not in {'y', 'n'}:
@@ -38,6 +42,15 @@ class lupo_cacciatori():
                 while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
+                    flag_contatto = False
+                    for cacciatore in self.plancia.find('O'):
+                        if distanza_posizioni(self.plancia.find('X'), cacciatore) <= 2:
+                            flag_contatto = True
+                            break
+                    if flag_contatto:
+                        deep = profondita + 2
+                    else:
+                        deep = profondita
                     if contatore % 2 == 0:
                         rotta_lupo = 'Entrare nel loop'
                         # Controllo che lo spostamento richiesto per il lupo sia possibile e sensato
@@ -60,6 +73,15 @@ class lupo_cacciatori():
                 while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
+                    flag_contatto = False
+                    for cacciatore in self.plancia.find('O'):
+                        if distanza_posizioni(self.plancia.find('X'), cacciatore) <= 2:
+                            flag_contatto = True
+                            break
+                    if flag_contatto:
+                        deep = profondita + 2
+                    else:
+                        deep = profondita
                     if contatore % 2 == 0:
                         rotta_lupo = scegli_mossa_ai(
                             self.plancia, contatore, deep)
