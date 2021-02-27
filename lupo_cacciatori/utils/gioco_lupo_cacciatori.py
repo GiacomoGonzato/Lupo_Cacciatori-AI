@@ -34,7 +34,8 @@ class lupo_cacciatori():
                     'Contro chi vuoi giocare? (X --> lupo, O --> cacciatori) ').lower()
 
             if cpwho == 'o':
-                while self.plancia.check_vittoria() == 0:
+                check_win = 0
+                while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
                     if contatore % 2 == 0:
@@ -52,8 +53,11 @@ class lupo_cacciatori():
                         self.plancia.posiziona_cacciatore(
                             mossa_cacciatore[0], mossa_cacciatore[1])
                     contatore += 1
+                    if contatore >= 10:
+                        check_win = self.plancia.check_vittoria()
             else:
-                while self.plancia.check_vittoria() == 0:
+                check_win = 0
+                while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
                     if contatore % 2 == 0:
@@ -78,8 +82,11 @@ class lupo_cacciatori():
                         self.plancia.posiziona_cacciatore(
                             posto_cacciatore, rotta_cacciatore)
                     contatore += 1
+                    if contatore >= 10:
+                        check_win = self.plancia.check_vittoria()
         else:
-            while self.plancia.check_vittoria() == 0:
+            check_win = 0
+            while check_win == 0:
                 self.plancia.stampa_plancia()
                 # Muove per primo il Lupo
                 if contatore % 2 == 0:
@@ -107,8 +114,10 @@ class lupo_cacciatori():
                     self.plancia.posiziona_cacciatore(
                         posto_cacciatore, rotta_cacciatore)
                 contatore += 1
+                if contatore >= 10:
+                    check_win = self.plancia.check_vittoria()
 
-        if self.plancia.check_vittoria() == 1:
+        if check_win == 1:
             print('HANNO VINTO I CACCIATORI')
         else:
             print('HA VINTO IL LUPO')

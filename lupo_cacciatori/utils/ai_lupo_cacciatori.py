@@ -3,34 +3,30 @@ from math import *
 
 
 def check_rotte_possibili(board, simbolo, coordinata_cacciatore=(0, 0)):
-    rotte_possibili = []
+    rotte_possibili = set()
     if simbolo == 'X':
         for rotta in {'SO', 'SE', 'NE', 'NO'}:
             if not board.check_movimento_lupo(rotta):
-                rotte_possibili.append(rotta)
+                rotte_possibili.add(rotta)
     elif simbolo == 'O':
         for rotta in {'NE', 'NO'}:
             if not board.check_movimento_cacciatore(coordinata_cacciatore, rotta):
-                rotte_possibili.append(rotta)
+                rotte_possibili.add(rotta)
     return rotte_possibili
 
 
 def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
-    tavolo = plancia()
-    tavolo.plancia = [[board.plancia[i][j]
-                       for j in range(8)] for i in range(8)]
-
-    check_win = tavolo.check_vittoria()
+    check_win = board.check_vittoria()
     if check_win == 1:
         return - inf
     elif check_win == -1:
         return inf
     elif deep == 0:
-        return tavolo.find('X')[0]
+        return board.find('X')[0]
 
     if contatore % 2 == 0:
         valore = - inf
-        for rotta in check_rotte_possibili(tavolo, 'X'):
+        for rotta in check_rotte_possibili(board, 'X'):
             banco_prova = plancia()
             banco_prova.plancia = [[board.plancia[i][j]
                                     for j in range(8)] for i in range(8)]
@@ -45,7 +41,7 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     else:
         valore = inf
         for coordinata in board.find('O'):
-            for rotta in check_rotte_possibili(tavolo, 'O', coordinata):
+            for rotta in check_rotte_possibili(board, 'O', coordinata):
                 banco_prova = plancia()
                 banco_prova.plancia = [[board.plancia[i][j]
                                         for j in range(8)] for i in range(8)]
@@ -56,6 +52,8 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
                 beta = min(beta, valore)
                 if beta <= alpha:
                     break
+            if beta <= alpha:
+                break
         return valore
 
 
