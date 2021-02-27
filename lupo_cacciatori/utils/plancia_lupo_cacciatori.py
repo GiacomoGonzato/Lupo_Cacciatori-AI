@@ -9,6 +9,18 @@ def ordine():
     return scacchiera
 
 
+def luogo_futuro(posto_attuale, rotta):
+    if rotta == 'NE':
+        posto_futuro = (posto_attuale[0]-1, posto_attuale[1]+1)
+    elif rotta == 'NO':
+        posto_futuro = (posto_attuale[0]-1, posto_attuale[1]-1)
+    elif rotta == 'SE':
+        posto_futuro = (posto_attuale[0]+1, posto_attuale[1]+1)
+    elif rotta == 'SO':
+        posto_futuro = (posto_attuale[0]+1, posto_attuale[1]-1)
+    return posto_futuro
+
+
 class plancia():
     def __init__(self, lato=3):
         self.lato = lato*2
@@ -60,41 +72,34 @@ class plancia():
         print('-'*self.lato*16 + '-'*9)
 
     def find(self, simb=''):
-        posto = {'X': [], 'O': []}
-        for i in range(8):
-            for j in range(8):
-                if self.plancia[i][j] == 'X':
-                    posto['X'].append((i, j))
-                elif self.plancia[i][j] == 'O':
-                    posto['O'].append((i, j))
-        if simb == 'X' and len(posto['X']) == 1:
-            return posto['X'][0]
-        elif simb == 'X' and len(posto['X']) != 1:
-            return posto['X']
+        if simb == 'X':
+            for i in range(8):
+                riga = self.plancia[i]
+                if riga.count('X') != 0:
+                    return (i, riga.index('X'))
         elif simb == 'O':
-            return tuple(posto['O'])
+            posti_cacciatori = []
+            for i in range(8):
+                riga = self.plancia[i]
+                if riga.count('O') == 1:
+                    posti_cacciatori.append((i, riga.index('O')))
+                elif riga.count('O') >= 2:
+                    for j in range(8):
+                        if riga[j] == 'O':
+                            posti_cacciatori.append((i, j))
+            return posti_cacciatori
         else:
-            return posto
+            posti = dict()
+            posti['X'] = self.find('X')
+            posti['O'] = self.find('O')
+            return posti
 
     def posiziona_lupo(self, rotta):
         # LUPO -------------------> 'X'
         # Possibili rotte --------> 'NE' 'NO' 'SE' 'SO'
 
-        if type(self.find('X')) == type(list()):
-            print('Errore posiziona_lupo: self.find() ha ritornato una lista')
-        else:
-            posto_attuale = self.find('X')
-
-        if rotta == 'NE':
-            posto_futuro = (posto_attuale[0]-1, posto_attuale[1]+1)
-        elif rotta == 'NO':
-            posto_futuro = (posto_attuale[0]-1, posto_attuale[1]-1)
-        elif rotta == 'SE':
-            posto_futuro = (posto_attuale[0]+1, posto_attuale[1]+1)
-        elif rotta == 'SO':
-            posto_futuro = (posto_attuale[0]+1, posto_attuale[1]-1)
-        else:
-            print('Errore posiziona_lupo: Rotta definita male')
+        posto_attuale = self.find('X')
+        posto_futuro = luogo_futuro(posto_attuale, rotta)
 
         self.plancia[posto_attuale[0]][posto_attuale[1]] = ''
         self.plancia[posto_futuro[0]][posto_futuro[1]] = 'X'
@@ -102,29 +107,10 @@ class plancia():
     def posiziona_cacciatore(self, coo_attuale, rotta):
         # CACCIATORI -------------> 'O'
         # Possibili rotte --------> 'NE' 'NO'
-        if rotta == 'NE':
-            posto_futuro = (coo_attuale[0]-1, coo_attuale[1]+1)
-        elif rotta == 'NO':
-            posto_futuro = (coo_attuale[0]-1, coo_attuale[1]-1)
-        else:
-            print('Errore posiziona_cacciatore: Rotta definita male')
+        posto_futuro = luogo_futuro(coo_attuale, rotta)
 
         self.plancia[coo_attuale[0]][coo_attuale[1]] = ''
         self.plancia[posto_futuro[0]][posto_futuro[1]] = 'O'
-
-    # Controlla che il numero delle pedine sulla plancia sia corretto e che siano posizionate sulle caselle corrette
-    def check_plancia(self):
-        # True ---> NON OK
-        # False --> OK
-        pedine_dict = self.find()
-        if len(pedine_dict['O']) != 4 or len(pedine_dict['X']) != 1:
-            return True
-        else:
-            for pedina in pedine_dict.keys():
-                for coordinata in pedine_dict[pedina]:
-                    if (coordinata[0] + coordinata[1]) % 2 == 1:
-                        return True
-            return False
 
     # Controlla che il movimento che vogliamo fare alla pedina del Lupo sia un movimento legale e che la plancia sia OK
     # True ---> NON OK
@@ -134,37 +120,16 @@ class plancia():
         if rotta not in {'NE', 'NO', 'SE', 'SO'}:
             return True
 
-        # Controllo che la Plancia sia OK
-        if self.check_plancia():
-            return True
-
         posto_lupo = self.find('X')
         posti_cacciatori = []
         posti_cacciatori.extend(self.find('O'))
 
         # Controllo che il movimento non sia in conflitto con la Plancia di gioco o con le altre pedine
-        if (posto_lupo[0] == 0 and rotta in {'NO', 'NE'}) or (posto_lupo[0] == 0 and posto_lupo[1] == 7 and rotta in {'NE', 'NO', 'SE'}):
+        posto_lupo_futuro = luogo_futuro(posto_lupo, rotta)
+        if (posto_lupo_futuro[0] not in range(8)) or (posto_lupo_futuro[1] not in range(8)) or (posto_lupo_futuro in posti_cacciatori):
             return True
-        elif (posto_lupo[1] == 0 and rotta in {'SO', 'NO'}) or (posto_lupo[1] == 0 and posto_lupo[0] == 7 and rotta in {'SO', 'NO', 'SE'}):
-            return True
-        elif posto_lupo[1] == 7 and rotta in {'SE', 'NE'}:
-            return True
-        elif posto_lupo[0] == 7 and rotta in {'SE', 'SO'}:
-            return True
-        elif posto_lupo[0] != 0 and posto_lupo[1] != 7 and rotta == 'NE':
-            if (posto_lupo[0] - 1, posto_lupo[1] + 1) in posti_cacciatori:
-                return True
-        elif posto_lupo[0] != 0 and posto_lupo[1] != 0 and rotta == 'NO':
-            if (posto_lupo[0] - 1, posto_lupo[1] - 1) in posti_cacciatori:
-                return True
-        elif posto_lupo[0] != 7 and posto_lupo[1] != 7 and rotta == 'SE':
-            if (posto_lupo[0] + 1, posto_lupo[1] + 1) in posti_cacciatori:
-                return True
-        elif posto_lupo[0] != 7 and posto_lupo[1] != 0 and rotta == 'SO':
-            if (posto_lupo[0] + 1, posto_lupo[1] - 1) in posti_cacciatori:
-                return True
-
-        return False
+        else:
+            return False
 
     # Controlla che il movimento che vogliamo fare alla pedina del Cacciatore sia un movimento legale e che la plancia sia OK
     # True ---> NON OK
@@ -172,10 +137,6 @@ class plancia():
     def check_movimento_cacciatore(self, posto_cacciatore, rotta):
         # Controllo che la rotta abbia senso
         if rotta not in {'NE', 'NO'}:
-            return True
-
-        # Controllo che la Plancia sia OK
-        if self.check_plancia():
             return True
 
         # Controllo che la selezione del Cacciatore che voglio far spostare sia corretta
@@ -190,20 +151,11 @@ class plancia():
         posti_cacciatori.append(self.find('X'))
         posti_occupati = posti_cacciatori
 
-        if posto_cacciatore[1] == 0 and rotta == 'NO':
+        posto_cacciatore_futuro = luogo_futuro(posto_cacciatore, rotta)
+        if (posto_cacciatore_futuro[0] not in range(8)) or (posto_cacciatore_futuro[1] not in range(8)) or (posto_cacciatore_futuro in posti_occupati):
             return True
-        elif posto_cacciatore[1] == 7 and rotta == 'NE':
-            return True
-        elif posto_cacciatore[0] == 0:
-            return True
-        elif posto_cacciatore[1] != 7 and posto_cacciatore[0] != 0 and rotta == 'NE':
-            if ((posto_cacciatore[0] - 1, posto_cacciatore[1] + 1) in posti_occupati):
-                return True
-        elif posto_cacciatore[1] != 0 and posto_cacciatore[0] != 0 and rotta == 'NO':
-            if ((posto_cacciatore[0] - 1, posto_cacciatore[1] - 1) in posti_occupati):
-                return True
-
-        return False
+        else:
+            return False
 
     # Controlla se le pedina sulla plancia sono o meno in una posizione di vittoria o sconfitta
     # Vince Cacciatori (O) ----->  1
@@ -214,19 +166,28 @@ class plancia():
         posti_cacciatori.extend(self.find('O'))
         posto_lupo = self.find('X')
 
+        # Se il lupo è a fianco del cacciatore più in basso allora il lupo ha certamente vinto
         if posto_lupo[0] >= max([hunter[0] for hunter in posti_cacciatori]):
             return -1
-
+        
+        # flag_lupo ---> True se il lupo non si può muovere
+        #           ---> False altrimenti
         flag_lupo = True
         for rotta in {'NE', 'NO', 'SE', 'SO'}:
             if not self.check_movimento_lupo(rotta):
                 flag_lupo = False
+                break
 
+        # flag_cacciatori ---> True se i cacciatori non si possono muovere
+        #                 ---> False altrimenti
         flag_cacciatori = True
         for rotta in {'NE', 'NO'}:
             for posto_cacciatore in posti_cacciatori:
                 if not self.check_movimento_cacciatore(posto_cacciatore, rotta):
                     flag_cacciatori = False
+                    break
+            if flag_cacciatori == False:
+                break
 
         if flag_lupo:
             return 1
