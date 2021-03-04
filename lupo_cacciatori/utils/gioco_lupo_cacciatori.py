@@ -2,31 +2,27 @@ from utils.plancia_lupo_cacciatori import plancia
 from utils.ai_lupo_cacciatori import scegli_mossa_ai
 
 
-def str_to_tupla_coo(stringa):
+def str_to_index(stringa):
     num = list()
     for i in stringa:
         if ord(i) >= 49 and ord(i) <= 56:
             num.append(int(i) - 1)
     if len(num) != 2:
-        return (9, 9)
+        return 0
     else:
-        return tuple(num)
-
-
-def distanza_posizioni(coo1, coo2):
-    return abs(coo1[0] - coo2[0]) + abs(coo1[1] - coo2[1])
+        return 8 * num[0] + num[1]
 
 
 class lupo_cacciatori():
     def __init__(self, lato=2):
         self.plancia = plancia(lato)
-        print('INIZIO DEL GIOCO\n')
 
     def reset_plancia(self):
         self.plancia.reset()
 
     # Logica di gioco
-    def play(self, profondita=4):
+    def play(self, deep=4):
+        print('INIZIO DEL GIOCO\n')
         contatore = 0
         computer = 'entra nel loop'
         while computer not in {'y', 'n'}:
@@ -36,21 +32,11 @@ class lupo_cacciatori():
             while cpwho not in {'x', 'o'}:
                 cpwho = input(
                     'Contro chi vuoi giocare? (X --> lupo, O --> cacciatori) ').lower()
-
             if cpwho == 'o':
                 check_win = 0
                 while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
-                    flag_contatto = False
-                    for cacciatore in self.plancia.find('O'):
-                        if distanza_posizioni(self.plancia.find('X'), cacciatore) <= 2:
-                            flag_contatto = True
-                            break
-                    if flag_contatto:
-                        deep = profondita + 2
-                    else:
-                        deep = profondita
                     if contatore % 2 == 0:
                         rotta_lupo = 'Entrare nel loop'
                         # Controllo che lo spostamento richiesto per il lupo sia possibile e sensato
@@ -66,22 +52,12 @@ class lupo_cacciatori():
                         self.plancia.posiziona_cacciatore(
                             mossa_cacciatore[0], mossa_cacciatore[1])
                     contatore += 1
-                    if contatore >= 10:
-                        check_win = self.plancia.check_vittoria()
+                    check_win = self.plancia.check_vittoria()
             else:
                 check_win = 0
                 while check_win == 0:
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
-                    flag_contatto = False
-                    for cacciatore in self.plancia.find('O'):
-                        if distanza_posizioni(self.plancia.find('X'), cacciatore) <= 2:
-                            flag_contatto = True
-                            break
-                    if flag_contatto:
-                        deep = profondita + 2
-                    else:
-                        deep = profondita
                     if contatore % 2 == 0:
                         rotta_lupo = scegli_mossa_ai(
                             self.plancia, contatore, deep)
@@ -93,7 +69,7 @@ class lupo_cacciatori():
                         while self.plancia.check_movimento_cacciatore(posto_cacciatore, 'NE') and self.plancia.check_movimento_cacciatore(posto_cacciatore, 'NO'):
                             posto_cacciatore = input(
                                 'Inserisci la coordinata (riga,colonna) del cacciatore che vuoi spostare: ')
-                            posto_cacciatore = str_to_tupla_coo(
+                            posto_cacciatore = str_to_index(
                                 posto_cacciatore)
                         rotta_cacciatore = 'Entrare nel loop'
                         # Controllo che la rotte che quel cacciatore deve seguire sia sensata
@@ -104,8 +80,7 @@ class lupo_cacciatori():
                         self.plancia.posiziona_cacciatore(
                             posto_cacciatore, rotta_cacciatore)
                     contatore += 1
-                    if contatore >= 10:
-                        check_win = self.plancia.check_vittoria()
+                    check_win = self.plancia.check_vittoria()
         else:
             check_win = 0
             while check_win == 0:
@@ -126,7 +101,7 @@ class lupo_cacciatori():
                     while posto_cacciatore not in self.plancia.find('O'):
                         posto_cacciatore = input(
                             'Inserisci la coordinata (riga,colonna) del cacciatore che vuoi spostare: ')
-                        posto_cacciatore = str_to_tupla_coo(posto_cacciatore)
+                        posto_cacciatore = str_to_index(posto_cacciatore)
                     rotta_cacciatore = 'Entrare nel loop'
                     # Controllo che la rotte che quel cacciatore deve seguire sia sensata
                     while self.plancia.check_movimento_cacciatore(posto_cacciatore, rotta_cacciatore):
@@ -136,9 +111,8 @@ class lupo_cacciatori():
                     self.plancia.posiziona_cacciatore(
                         posto_cacciatore, rotta_cacciatore)
                 contatore += 1
-                if contatore >= 10:
-                    check_win = self.plancia.check_vittoria()
-
+                check_win = self.plancia.check_vittoria()
+        self.plancia.stampa_plancia()
         if check_win == 1:
             print('HANNO VINTO I CACCIATORI')
         else:
