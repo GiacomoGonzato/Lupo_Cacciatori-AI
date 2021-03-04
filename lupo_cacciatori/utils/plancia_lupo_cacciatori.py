@@ -1,3 +1,6 @@
+from math import *
+
+
 def ordine():
     scacchiera = ['' for i in range(64)]
     for i in range(1, 8, 2):
@@ -15,6 +18,17 @@ def posizioni_proibite():
 # Coordinata del tipo (X,Y)
 def index_to_coo(index):
     return (index % 8 + 1, index // 8 + 1)
+
+
+# Metrica Euclidea
+def distanza_index(index1, index2):
+    coo1 = index_to_coo(index1)
+    coo2 = index_to_coo(index2)
+    return distanza_coo(coo1, coo2)
+
+
+def distanza_coo(coo1, coo2):
+    return sqrt((coo1[0] - coo2[0])**2 + (coo1[1] - coo2[1])**2)
 
 
 def termini_noti_rette(lista):

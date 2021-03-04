@@ -1,4 +1,4 @@
-from utils.plancia_lupo_cacciatori import plancia
+from utils.plancia_lupo_cacciatori import plancia, distanza_index, index_to_coo
 from math import *
 
 
@@ -17,7 +17,8 @@ def check_rotte_possibili(board, simbolo, posto_cacciatore=0):
 
 # True ---> i cacciatori hanno lasciato dei buchi tra di loro
 # False --> non l'hanno fatto
-def check_cacciatori_holes(board):
+# Se non sono in formazione penalizzo
+def check_cacciatori_formazione(board):
     posti_cacciatori = board.find('O')
     copia_posti = [x for x in posti_cacciatori]
     copia_posti.sort()
@@ -37,8 +38,29 @@ def check_cacciatori_holes(board):
     return False
 
 
+def baricentro_from_index(lista):
+    coordinate = set()
+    for x in lista:
+        coordinate.add(index_to_coo(x))
+    return baricentro_from_coo(coordinate)
+
+
+def baricentro_from_coo(punti):
+    x = 0
+    y = 0
+    for punto in punti:
+        x += punto[0]
+        y += punto[1]
+    x = x/(len(punti))
+    y = y/(len(punti))
+    return (x, y)
+
+
+
 # I cacciatori vogliono minimizzare il valore (mandare il lupo verso l'alto)
 # Il lupo vuole massimizzarlo (andare verso il basso)
+
+
 def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     check_win = board.check_vittoria()
     if check_win == 1:
@@ -90,8 +112,8 @@ def scegli_mossa_ai(board, contatore, deep):
             banco_prova.posiziona_lupo(rotta)
             move_power = valore_mossa(
                 banco_prova, contatore + 1, deep - 1, valore, inf)
-            if check_cacciatori_holes(banco_prova):
-                move_power += 2
+            if check_cacciatori_formazione(banco_prova):
+                move_power += 20
             if valore <= move_power:
                 rotta_futura = rotta
                 valore = move_power
@@ -108,8 +130,8 @@ def scegli_mossa_ai(board, contatore, deep):
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
                 move_power = valore_mossa(
                     banco_prova, contatore + 1, deep - 1, - inf, valore)
-                if check_cacciatori_holes(banco_prova):
-                    move_power += 2
+                if check_cacciatori_formazione(banco_prova):
+                    move_power += 20
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
