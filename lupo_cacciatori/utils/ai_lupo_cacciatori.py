@@ -37,6 +37,8 @@ def check_cacciatori_holes(board):
     return False
 
 
+# I cacciatori vogliono minimizzare il valore (mandare il lupo verso l'alto)
+# Il lupo vuole massimizzarlo (andare verso il basso)
 def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     check_win = board.check_vittoria()
     if check_win == 1:
@@ -44,19 +46,16 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     elif check_win == -1:
         return inf
     elif deep == 0:
-        return board.find('X')[0]
+        return board.find('X')
 
     if contatore % 2 == 0:
         valore = - inf
         for rotta in check_rotte_possibili(board, 'X'):
             banco_prova = plancia()
-            banco_prova.plancia = [[board.plancia[i][j]
-                                    for j in range(8)] for i in range(8)]
+            banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
             valore = max(valore, valore_mossa(
                 banco_prova, contatore + 1, deep - 1, alpha, beta))
-            if check_cacciatori_holes(banco_prova):
-                valore = valore + 2
             del banco_prova
             alpha = max(alpha, valore)
             if beta <= alpha:
@@ -67,13 +66,10 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
         for coordinata in board.find('O'):
             for rotta in check_rotte_possibili(board, 'O', coordinata):
                 banco_prova = plancia()
-                banco_prova.plancia = [[board.plancia[i][j]
-                                        for j in range(8)] for i in range(8)]
+                banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
                 valore = min(valore, valore_mossa(
                     banco_prova, contatore + 1, deep - 1, alpha, beta))
-                if check_cacciatori_holes(banco_prova):
-                    valore = valore + 2
                 del banco_prova
                 beta = min(beta, valore)
                 if beta <= alpha:
@@ -90,10 +86,12 @@ def scegli_mossa_ai(board, contatore, deep):
         valore = - inf
         for rotta in check_rotte_possibili(board, 'X'):
             banco_prova = plancia()
-            banco_prova.plancia = [[board.plancia[i][j]
-                                    for j in range(8)] for i in range(8)]
+            banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            move_power = valore_mossa(banco_prova, contatore + 1, deep)
+            move_power = valore_mossa(
+                banco_prova, contatore + 1, deep - 1, valore, inf)
+            if check_cacciatori_holes(banco_prova):
+                move_power += 2
             if valore <= move_power:
                 rotta_futura = rotta
                 valore = move_power
@@ -106,10 +104,12 @@ def scegli_mossa_ai(board, contatore, deep):
         for coordinata in board.find('O'):
             for rotta in check_rotte_possibili(board, 'O', coordinata):
                 banco_prova = plancia()
-                banco_prova.plancia = [[board.plancia[i][j]
-                                        for j in range(8)] for i in range(8)]
+                banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                move_power = valore_mossa(banco_prova, contatore + 1, deep)
+                move_power = valore_mossa(
+                    banco_prova, contatore + 1, deep - 1, - inf, valore)
+                if check_cacciatori_holes(banco_prova):
+                    move_power += 2
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
