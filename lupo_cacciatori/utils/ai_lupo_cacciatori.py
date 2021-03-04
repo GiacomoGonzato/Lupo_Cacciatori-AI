@@ -2,7 +2,7 @@ from utils.plancia_lupo_cacciatori import plancia
 from math import *
 
 
-def check_rotte_possibili(board, simbolo, coordinata_cacciatore=(0, 0)):
+def check_rotte_possibili(board, simbolo, posto_cacciatore=0):
     rotte_possibili = set()
     if simbolo == 'X':
         for rotta in {'SO', 'SE', 'NE', 'NO'}:
@@ -10,29 +10,30 @@ def check_rotte_possibili(board, simbolo, coordinata_cacciatore=(0, 0)):
                 rotte_possibili.add(rotta)
     elif simbolo == 'O':
         for rotta in {'NE', 'NO'}:
-            if not board.check_movimento_cacciatore(coordinata_cacciatore, rotta):
+            if not board.check_movimento_cacciatore(posto_cacciatore, rotta):
                 rotte_possibili.add(rotta)
     return rotte_possibili
 
 
-def distanza_posizioni(coo1, coo2):
-    return abs(coo1[0] - coo2[0]) + abs(coo1[1] - coo2[1])
-
 # True ---> i cacciatori hanno lasciato dei buchi tra di loro
 # False --> non l'hanno fatto
-
-
 def check_cacciatori_holes(board):
     posti_cacciatori = board.find('O')
-    for cacciatore in posti_cacciatori:
-        compagni = {posto for posto in posti_cacciatori if posto != cacciatore}
-        flag_lontano = True
-        for compagno in compagni:
-            if distanza_posizioni(cacciatore, compagno) <= 3:
-                flag_lontano = False
-                break
-        if flag_lontano:
-            return True
+    copia_posti = [x for x in posti_cacciatori]
+    copia_posti.sort()
+    righe_cacciatori = {x//8 for x in posti_cacciatori}
+    if len(righe_cacciatori) >= 3:
+        return True
+    elif len(righe_cacciatori) <= 1:
+        return False
+    else:
+        for i in range(3):
+            if (min(posti_cacciatori)//8) % 2 == 0:
+                if ((copia_posti[i+1] - copia_posti[i]) not in {2, 9}):
+                    return True
+            else:
+                if ((copia_posti[i+1] - copia_posti[i]) not in {2, 3}):
+                    return True
     return False
 
 
