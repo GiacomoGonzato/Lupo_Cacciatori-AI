@@ -68,8 +68,9 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     elif check_win == -1:
         return inf
     elif deep == 0:
-        riga_lupo = board.find('X')//8
-        return riga_lupo * (1 - riga_lupo/7) + (deviazione_from_index(board.find('O'))[1]) * (riga_lupo/7)
+        riga_lupo = (board.find('X')//8)
+        (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
+        return (riga_lupo * (1 - riga_lupo/7) + (deviazione_y) * (riga_lupo/7)) * 10
 
     if contatore % 2 == 0:
         valore = - inf
@@ -113,8 +114,6 @@ def scegli_mossa_ai(board, contatore, deep):
             banco_prova.posiziona_lupo(rotta)
             move_power = valore_mossa(
                 banco_prova, contatore + 1, deep - 1, valore, inf)
-            if move_power == - inf:
-                print('Ho perso le speranze!!!')
             if check_cacciatori_formazione(banco_prova):
                 move_power += 20
             if valore <= move_power:
@@ -133,8 +132,6 @@ def scegli_mossa_ai(board, contatore, deep):
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
                 move_power = valore_mossa(
                     banco_prova, contatore + 1, deep - 1, - inf, valore)
-                if move_power == inf:
-                    print('Ho perso le speranze!!!')
                 if check_cacciatori_formazione(banco_prova):
                     move_power += 20
                 if valore >= move_power:
