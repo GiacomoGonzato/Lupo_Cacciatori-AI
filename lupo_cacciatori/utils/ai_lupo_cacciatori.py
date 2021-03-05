@@ -71,7 +71,7 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
     elif deep == 0:
         riga_lupo = (board.find('X')//8)
         (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
-        return riga_lupo * (1 - riga_lupo/7) + (deviazione_y) * (riga_lupo/7)
+        return riga_lupo + deviazione_y
 
     if contatore % 2 == 0:
         valore = - inf
@@ -79,13 +79,13 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            if tabella.from_board_to_hash(banco_prova) in tabella.strategie_viste:
-                del banco_prova
-                continue
+            strategia = tabella.from_board_to_hash(banco_prova)
+            if strategia not in tabella.strategie_viste.keys():
+                valore = max(valore, valore_mossa(tabella,
+                                                  banco_prova, contatore + 1, deep - 1, alpha, beta))
+                tabella.add_hash(banco_prova, valore)
             else:
-                tabella.add_hash(banco_prova)
-            valore = max(valore, valore_mossa(tabella, banco_prova,
-                                              contatore + 1, deep - 1, alpha, beta))
+                valore = tabella.strategie_viste[strategia]
             del banco_prova
             alpha = max(alpha, valore)
             if beta <= alpha:
@@ -98,13 +98,13 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                if tabella.from_board_to_hash(banco_prova) in tabella.strategie_viste:
-                    del banco_prova
-                    continue
+                strategia = tabella.from_board_to_hash(banco_prova)
+                if strategia not in tabella.strategie_viste.keys():
+                    valore = min(valore, valore_mossa(tabella,
+                                                      banco_prova, contatore + 1, deep - 1, alpha, beta))
+                    tabella.add_hash(banco_prova, valore)
                 else:
-                    tabella.add_hash(banco_prova)
-                valore = min(valore, valore_mossa(tabella, banco_prova,
-                                                  contatore + 1, deep - 1, alpha, beta))
+                    valore = tabella.strategie_viste[strategia]
                 del banco_prova
                 beta = min(beta, valore)
                 if beta <= alpha:
@@ -117,7 +117,8 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
 def scegli_mossa_ai(board, contatore, deep):
     # Inizializzo la transposition table
     tabella = transposition_table()
-    tabella.add_hash(board)
+    del tabella
+    tabella = transposition_table()
     # Devo scegliere la mossa come se fossi il lupo
     # Il lupo vuole massimizzare
     if contatore % 2 == 0:
@@ -126,17 +127,15 @@ def scegli_mossa_ai(board, contatore, deep):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            tabella.add_hash(banco_prova)
             move_power = valore_mossa(tabella,
                                       banco_prova, contatore + 1, deep - 1, valore, inf)
             if check_cacciatori_formazione(banco_prova):
                 move_power += 20
+            tabella.add_hash(banco_prova, move_power)
             if valore <= move_power:
-                rotta_futura = rotta
+                mossa_futura = rotta
                 valore = move_power
             del banco_prova
-        del tabella
-        return rotta_futura
     # Devo scegliere quale cacciatore muovere e come muoverlo
     # I cacciatori vogliono minimizzare
     else:
@@ -146,14 +145,14 @@ def scegli_mossa_ai(board, contatore, deep):
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                tabella.add_hash(banco_prova)
                 move_power = valore_mossa(tabella,
                                           banco_prova, contatore + 1, deep - 1, - inf, valore)
                 if check_cacciatori_formazione(banco_prova):
                     move_power += 20
+                tabella.add_hash(banco_prova, move_power)
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
                 del banco_prova
-        del tabella
-        return mossa_futura
+    del tabella
+    return mossa_futura

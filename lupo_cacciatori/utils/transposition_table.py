@@ -12,7 +12,7 @@ def scelta_casuale():
 class transposition_table():
     def __init__(self):
         self.possibilita = scelta_casuale()
-        self.strategie_viste = set()
+        self.strategie_viste = dict()
 
     def from_board_to_hash(self, board):
         tavola_associata = 0
@@ -21,5 +21,5 @@ class transposition_table():
         tavola_associata ^= self.possibilita['X'][board.find('X')]
         return tavola_associata
 
-    def add_hash(self, board):
-        self.strategie_viste.add(self.from_board_to_hash(board))
+    def add_hash(self, board, valore):
+        self.strategie_viste[self.from_board_to_hash(board)] = valore
