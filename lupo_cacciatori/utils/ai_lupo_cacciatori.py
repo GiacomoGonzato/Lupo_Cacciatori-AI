@@ -38,29 +38,29 @@ def check_cacciatori_formazione(board):
     return False
 
 
-def baricentro_from_index(lista):
-    coordinate = set()
-    for x in lista:
-        coordinate.add(index_to_coo(x))
-    return baricentro_from_coo(coordinate)
+def middle_value(valori):
+    return (sum(valori) / len(valori))
 
 
-def baricentro_from_coo(punti):
-    x = 0
-    y = 0
-    for punto in punti:
-        x += punto[0]
-        y += punto[1]
-    x = x/(len(punti))
-    y = y/(len(punti))
-    return (x, y)
+def deviazione_standard(valori):
+    media = middle_value(valori)
+    valori_quadri_centrati = [(i - media)**2 for i in valori]
+    return sqrt(middle_value(valori_quadri_centrati))
 
+
+def deviazione_from_index(valori):
+    punti = {index_to_coo(x) for x in valori}
+    return deviazione_from_coo(punti)
+
+
+def deviazione_from_coo(punti):
+    valori_x = [i[0] for i in punti]
+    valori_y = [i[1] for i in punti]
+    return (deviazione_standard(valori_x), deviazione_standard(valori_y))
 
 
 # I cacciatori vogliono minimizzare il valore (mandare il lupo verso l'alto)
 # Il lupo vuole massimizzarlo (andare verso il basso)
-
-
 def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     check_win = board.check_vittoria()
     if check_win == 1:
@@ -68,7 +68,7 @@ def valore_mossa(board, contatore, deep, alpha=- inf, beta=inf):
     elif check_win == -1:
         return inf
     elif deep == 0:
-        return board.find('X')
+        return board.find('X')//8 + deviazione_from_index(board.find('O'))[1]
 
     if contatore % 2 == 0:
         valore = - inf
