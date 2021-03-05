@@ -80,6 +80,7 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
             if tabella.from_board_to_hash(banco_prova) in tabella.strategie_viste:
+                del banco_prova
                 continue
             else:
                 tabella.add_hash(banco_prova)
@@ -98,6 +99,7 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
                 if tabella.from_board_to_hash(banco_prova) in tabella.strategie_viste:
+                    del banco_prova
                     continue
                 else:
                     tabella.add_hash(banco_prova)
@@ -133,6 +135,7 @@ def scegli_mossa_ai(board, contatore, deep):
                 rotta_futura = rotta
                 valore = move_power
             del banco_prova
+        del tabella
         return rotta_futura
     # Devo scegliere quale cacciatore muovere e come muoverlo
     # I cacciatori vogliono minimizzare
@@ -152,4 +155,5 @@ def scegli_mossa_ai(board, contatore, deep):
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
                 del banco_prova
+        del tabella
         return mossa_futura
