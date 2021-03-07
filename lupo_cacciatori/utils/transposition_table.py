@@ -1,4 +1,5 @@
 from random import *
+from math import *
 
 
 def scelta_casuale():

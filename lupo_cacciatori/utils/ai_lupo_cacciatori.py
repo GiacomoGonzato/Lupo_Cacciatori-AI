@@ -1,5 +1,5 @@
 from utils.plancia_lupo_cacciatori import plancia, index_to_coo
-from utils.transposition_table import transposition_table
+from utils.transposition_table import scelta_casuale, transposition_table
 from math import *
 
 
@@ -69,9 +69,7 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
     elif check_win == -1:
         return inf
     elif deep == 0:
-        riga_lupo = (board.find('X')//8)
-        (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
-        return riga_lupo + deviazione_y
+        return board.find('X')//8
 
     if contatore % 2 == 0:
         valore = - inf
@@ -117,8 +115,6 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
 def scegli_mossa_ai(board, contatore, deep):
     # Inizializzo la transposition table
     tabella = transposition_table()
-    del tabella
-    tabella = transposition_table()
     # Devo scegliere la mossa come se fossi il lupo
     # Il lupo vuole massimizzare
     if contatore % 2 == 0:
@@ -131,6 +127,8 @@ def scegli_mossa_ai(board, contatore, deep):
                                       banco_prova, contatore + 1, deep - 1, valore, inf)
             if check_cacciatori_formazione(banco_prova):
                 move_power += 20
+            (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
+            move_power += deviazione_y
             tabella.add_hash(banco_prova, move_power)
             if valore <= move_power:
                 mossa_futura = rotta
@@ -149,10 +147,17 @@ def scegli_mossa_ai(board, contatore, deep):
                                           banco_prova, contatore + 1, deep - 1, - inf, valore)
                 if check_cacciatori_formazione(banco_prova):
                     move_power += 20
+                (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
+                move_power += deviazione_y
                 tabella.add_hash(banco_prova, move_power)
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
+                # AIUTO SUPPLEMENTARE AL DEBUGGER ----------
+                if True:
+                    print('(' + str(coordinata) + ',' + str(rotta) +
+                          '):-------->' + str(move_power))
+                # FINE AIUTO -------------------------------
                 del banco_prova
     del tabella
     return mossa_futura
