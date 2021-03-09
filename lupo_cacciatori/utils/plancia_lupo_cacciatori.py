@@ -2,10 +2,18 @@ from math import *
 
 
 def ordine():
-    scacchiera = ['' for i in range(64)]
-    for i in range(1, 8, 2):
-        scacchiera[i] = 'O'
-    scacchiera[60] = 'X'
+    if False:
+        scacchiera = ['' for i in range(64)]
+        for i in range(1, 8, 2):
+            scacchiera[i] = 'O'
+        scacchiera[60] = 'X'
+    else:
+        scacchiera = ['' for i in range(64)]
+        scacchiera[1] = 'O'
+        scacchiera[3] = 'O'
+        scacchiera[5] = 'O'
+        scacchiera[7] = 'O'
+        scacchiera[60] = 'X'
     return scacchiera
 
 

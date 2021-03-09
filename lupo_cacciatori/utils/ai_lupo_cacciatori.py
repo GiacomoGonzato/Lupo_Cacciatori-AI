@@ -1,18 +1,19 @@
 from utils.plancia_lupo_cacciatori import plancia, index_to_coo
 from utils.transposition_table import scelta_casuale, transposition_table
 from math import *
+from timeit import default_timer as timer
 
 
 def check_rotte_possibili(board, simbolo, posto_cacciatore=0):
-    rotte_possibili = set()
+    rotte_possibili = list()
     if simbolo == 'X':
-        for rotta in {'SO', 'SE', 'NE', 'NO'}:
+        for rotta in ['SO', 'SE', 'NE', 'NO']:
             if not board.check_movimento_lupo(rotta):
-                rotte_possibili.add(rotta)
+                rotte_possibili.append(rotta)
     elif simbolo == 'O':
-        for rotta in {'NE', 'NO'}:
+        for rotta in ['NE', 'NO']:
             if not board.check_movimento_cacciatore(posto_cacciatore, rotta):
-                rotte_possibili.add(rotta)
+                rotte_possibili.append(rotta)
     return rotte_possibili
 
 
@@ -62,14 +63,37 @@ def deviazione_from_coo(punti):
 
 # I cacciatori vogliono minimizzare il valore (mandare il lupo verso l'alto)
 # Il lupo vuole massimizzarlo (andare verso il basso)
+# Vince Cacciatori (O) ----->  1
+# Vince Lupo (X) -----------> -1
+# In corso ----------------->  0
 def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
+    flag = False
     check_win = board.check_vittoria()
     if check_win == 1:
-        return - inf
+        flag = True
+        risultato = - inf
     elif check_win == -1:
-        return inf
+        flag = True
+        risultato = inf
     elif deep == 0:
-        return board.find('X')//8
+        flag = True
+        risultato = 7 - board.find('X')//8
+
+    strategia = tabella.from_board_to_hash(board, contatore)
+    if strategia in tabella.strategie_viste.keys():
+        lowerbound = tabella.get_lower(strategia)
+        upperbound = tabella.get_upper(strategia)
+        if lowerbound >= beta:
+            return lowerbound
+        if upperbound <= alpha:
+            return upperbound
+    else:
+        tabella.add_hash(board, contatore)
+
+    if flag:
+        tabella.add_lower(strategia, risultato)
+        tabella.add_upper(strategia, risultato)
+        return risultato
 
     if contatore % 2 == 0:
         valore = - inf
@@ -77,18 +101,12 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            strategia = tabella.from_board_to_hash(banco_prova)
-            if strategia not in tabella.strategie_viste.keys():
-                valore = max(valore, valore_mossa(tabella,
-                                                  banco_prova, contatore + 1, deep - 1, alpha, beta))
-                tabella.add_hash(banco_prova, valore)
-            else:
-                valore = tabella.strategie_viste[strategia]
+            valore = max(valore, valore_mossa(tabella,
+                                              banco_prova, contatore + 1, deep - 1, alpha, beta))
             del banco_prova
             alpha = max(alpha, valore)
             if beta <= alpha:
                 break
-        return valore
     else:
         valore = inf
         for coordinata in board.find('O'):
@@ -96,20 +114,41 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                strategia = tabella.from_board_to_hash(banco_prova)
-                if strategia not in tabella.strategie_viste.keys():
-                    valore = min(valore, valore_mossa(tabella,
-                                                      banco_prova, contatore + 1, deep - 1, alpha, beta))
-                    tabella.add_hash(banco_prova, valore)
-                else:
-                    valore = tabella.strategie_viste[strategia]
+                valore = min(valore, valore_mossa(tabella,
+                                                  banco_prova, contatore + 1, deep - 1, alpha, beta))
                 del banco_prova
                 beta = min(beta, valore)
                 if beta <= alpha:
                     break
             if beta <= alpha:
                 break
-        return valore
+
+    if valore < beta:
+        tabella.add_lower(strategia, valore)
+    if valore > alpha:
+        tabella.add_upper(strategia, valore)
+
+    return valore
+
+
+def conteggio_extra_inizio(banco):
+    totale = 0
+    if check_cacciatori_formazione(banco):
+        totale += 20
+    (deviazione_x, deviazione_y) = deviazione_from_index(banco.find('O'))
+    totale += deviazione_y
+    return totale
+
+
+# AIUTO SUPPLEMENTARE AL DEBUGGER ----------
+def debug_value(valore, contatore, rotta, coordinata=0):
+
+    if True:
+        if contatore % 2 == 0:
+            print(str(rotta) + ':-------->' + str(valore))
+        else:
+            print('[' + str(coordinata) + ',' + str(rotta) +
+                  ']:-------->' + str(valore))
 
 
 def scegli_mossa_ai(board, contatore, deep):
@@ -123,13 +162,10 @@ def scegli_mossa_ai(board, contatore, deep):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            move_power = valore_mossa(tabella,
-                                      banco_prova, contatore + 1, deep - 1, valore, inf)
-            if check_cacciatori_formazione(banco_prova):
-                move_power += 20
-            (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
-            move_power += deviazione_y
-            tabella.add_hash(banco_prova, move_power)
+            move_power = conteggio_extra_inizio(banco_prova)
+            move_power += valore_mossa(tabella,
+                                       banco_prova, contatore + 1, deep - 1, valore, inf)
+            debug_value(move_power, contatore, rotta)
             if valore <= move_power:
                 mossa_futura = rotta
                 valore = move_power
@@ -140,24 +176,20 @@ def scegli_mossa_ai(board, contatore, deep):
         valore = inf
         for coordinata in board.find('O'):
             for rotta in check_rotte_possibili(board, 'O', coordinata):
+                start = timer()
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                move_power = valore_mossa(tabella,
-                                          banco_prova, contatore + 1, deep - 1, - inf, valore)
-                if check_cacciatori_formazione(banco_prova):
-                    move_power += 20
-                (deviazione_x, deviazione_y) = deviazione_from_index(board.find('O'))
-                move_power += deviazione_y
-                tabella.add_hash(banco_prova, move_power)
+                move_power = conteggio_extra_inizio(banco_prova)
+                move_power += valore_mossa(tabella,
+                                           banco_prova, contatore + 1, deep - 1, - inf, valore)
+                debug_value(move_power, contatore, rotta, coordinata)
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
-                # AIUTO SUPPLEMENTARE AL DEBUGGER ----------
-                if True:
-                    print('(' + str(coordinata) + ',' + str(rotta) +
-                          '):-------->' + str(move_power))
-                # FINE AIUTO -------------------------------
                 del banco_prova
+                end = timer()
+                print(end - start)
+                print()
     del tabella
     return mossa_futura
