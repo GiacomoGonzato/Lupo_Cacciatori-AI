@@ -131,7 +131,14 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
     return valore
 
 
-def conteggio_extra_inizio(banco):
+def conteggio_extra_inizio_lupo(banco):
+    totale = 0
+    (deviazione_x, deviazione_y) = deviazione_from_index(banco.find('O'))
+    totale += deviazione_y
+    return totale
+
+
+def conteggio_extra_inizio_cacciatori(banco):
     totale = 0
     if check_cacciatori_formazione(banco):
         totale += 20
@@ -162,13 +169,15 @@ def scegli_mossa_ai(board, contatore, deep):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            move_power = conteggio_extra_inizio(banco_prova)
+            move_power = conteggio_extra_inizio_lupo(banco_prova)
             move_power += valore_mossa(tabella,
                                        banco_prova, contatore + 1, deep - 1, valore, inf)
             debug_value(move_power, contatore, rotta)
             if valore <= move_power:
                 mossa_futura = rotta
                 valore = move_power
+            if valore == inf:
+                break
             del banco_prova
     # Devo scegliere quale cacciatore muovere e come muoverlo
     # I cacciatori vogliono minimizzare
@@ -180,16 +189,20 @@ def scegli_mossa_ai(board, contatore, deep):
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                move_power = conteggio_extra_inizio(banco_prova)
+                move_power = conteggio_extra_inizio_cacciatori(banco_prova)
                 move_power += valore_mossa(tabella,
                                            banco_prova, contatore + 1, deep - 1, - inf, valore)
                 debug_value(move_power, contatore, rotta, coordinata)
                 if valore >= move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
+                if valore == - inf:
+                    break
                 del banco_prova
                 end = timer()
                 print(end - start)
                 print()
+            if valore == - inf:
+                break
     del tabella
     return mossa_futura
