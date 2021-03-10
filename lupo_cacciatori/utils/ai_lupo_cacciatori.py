@@ -166,14 +166,15 @@ def scegli_mossa_ai(board, contatore, deep):
     if contatore % 2 == 0:
         valore = - inf
         for rotta in check_rotte_possibili(board, 'X'):
+            if valore == - inf:
+                mossa_futura = rotta
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            move_power = conteggio_extra_inizio_lupo(banco_prova)
-            move_power += valore_mossa(tabella,
-                                       banco_prova, contatore + 1, deep - 1, valore, inf)
+            move_power = valore_mossa(tabella,
+                                      banco_prova, contatore + 1, deep - 1, valore, inf)
             debug_value(move_power, contatore, rotta)
-            if valore <= move_power:
+            if valore < move_power:
                 mossa_futura = rotta
                 valore = move_power
             if valore == inf:
@@ -185,15 +186,16 @@ def scegli_mossa_ai(board, contatore, deep):
         valore = inf
         for coordinata in board.find('O'):
             for rotta in check_rotte_possibili(board, 'O', coordinata):
+                if valore == inf:
+                    mossa_futura = (coordinata, rotta)
                 start = timer()
                 banco_prova = plancia()
                 banco_prova.plancia = [x for x in board.plancia]
                 banco_prova.posiziona_cacciatore(coordinata, rotta)
-                move_power = conteggio_extra_inizio_cacciatori(banco_prova)
-                move_power += valore_mossa(tabella,
-                                           banco_prova, contatore + 1, deep - 1, - inf, valore)
+                move_power = valore_mossa(tabella,
+                                          banco_prova, contatore + 1, deep - 1, - inf, valore)
                 debug_value(move_power, contatore, rotta, coordinata)
-                if valore >= move_power:
+                if valore > move_power:
                     mossa_futura = (coordinata, rotta)
                     valore = move_power
                 if valore == - inf:
