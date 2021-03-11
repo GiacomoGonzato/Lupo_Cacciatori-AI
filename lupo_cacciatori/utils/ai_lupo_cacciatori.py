@@ -1,3 +1,4 @@
+from random import randint, shuffle
 from utils.plancia_lupo_cacciatori import plancia, index_to_coo
 from utils.transposition_table import transposition_table
 from utils.remember_reorder_moves import next_moves, type_table
@@ -8,14 +9,19 @@ from timeit import default_timer as timer
 def check_rotte_possibili(board, simbolo, guess_move=next_moves(0)):
     rotte_possibili = list()
     if simbolo == 'X':
-        rotte_possibili = [rotta for rotta in
-                           ['SO', 'SE', 'NE', 'NO'] if not board.check_movimento_lupo(rotta)]
+        testa_croce = randint(0, 1)
+        if testa_croce:
+            tutte_rotte_lupo = ['SO', 'SE', 'NE', 'NO']
+        else:
+            tutte_rotte_lupo = ['SE', 'SO', 'NE', 'NO']
+        rotte_possibili = [rotta for rotta in tutte_rotte_lupo
+                           if not board.check_movimento_lupo(rotta)]
     elif simbolo == 'O':
         cacciatori_ordinati = list(board.find('O'))
         cacciatori_ordinati.sort()
         for hunter in cacciatori_ordinati:
-            rotte_possibili.extend([(hunter, rotta) for rotta in
-                                    ['NE', 'NO'] if not board.check_movimento_cacciatore(hunter, rotta)])
+            rotte_possibili.extend([(hunter, rotta) for rotta in ['NE', 'NO']
+                                    if not board.check_movimento_cacciatore(hunter, rotta)])
     if guess_move.segno in {'O', 'X'}:
         codice_tavolo = type_table(board)
         if codice_tavolo in guess_move.move.keys():
