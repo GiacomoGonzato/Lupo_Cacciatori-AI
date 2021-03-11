@@ -1,19 +1,30 @@
 from utils.plancia_lupo_cacciatori import plancia, index_to_coo
 from utils.transposition_table import transposition_table
+from utils.remember_reorder_moves import next_moves
 from math import *
 from timeit import default_timer as timer
 
 
-def check_rotte_possibili(board, simbolo, posto_cacciatore=0):
+def check_rotte_possibili(board, simbolo, guess_move=next_moves(0)):
     rotte_possibili = list()
     if simbolo == 'X':
-        for rotta in ['SO', 'SE', 'NE', 'NO']:
-            if not board.check_movimento_lupo(rotta):
-                rotte_possibili.append(rotta)
+        contatore = 0
+        rotte_possibili = [rotta for rotta in
+                           ['SO', 'SE', 'NE', 'NO'] if not board.check_movimento_lupo(rotta)]
     elif simbolo == 'O':
-        for rotta in ['NE', 'NO']:
-            if not board.check_movimento_cacciatore(posto_cacciatore, rotta):
-                rotte_possibili.append(rotta)
+        contatore = 1
+        cacciatori_ordinati = list(board.find('O'))
+        cacciatori_ordinati.sort()
+        for hunter in cacciatori_ordinati:
+            rotte_possibili.extend([(hunter, rotta) for rotta in
+                                    ['NE', 'NO'] if not board.check_movimento_cacciatore(hunter, rotta)])
+    if len(guess_move.hash_values) != 0:
+        hash_value = guess_move.from_board_to_hash(board, contatore)
+        if hash_value in guess_move.move.keys():
+            mossa = guess_move.move[hash_value]
+            if mossa in rotte_possibili:
+                rotte_possibili.remove(mossa)
+                rotte_possibili.insert(0, mossa)
     return rotte_possibili
 
 
@@ -22,7 +33,7 @@ def check_rotte_possibili(board, simbolo, posto_cacciatore=0):
 # Vince Cacciatori (O) ----->  1
 # Vince Lupo (X) -----------> -1
 # In corso ----------------->  0
-def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
+def valore_mossa(guess_move, tabella, board, contatore, deep, alpha=- inf, beta=inf):
     flag = False
     check_win = board.check_vittoria()
     if check_win == 1:
@@ -53,29 +64,34 @@ def valore_mossa(tabella, board, contatore, deep, alpha=- inf, beta=inf):
 
     if contatore % 2 == 0:
         valore = - inf
+        val_confronto = valore
         for rotta in check_rotte_possibili(board, 'X'):
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            valore = max(valore, valore_mossa(tabella,
+            valore = max(valore, valore_mossa(guess_move, tabella,
                                               banco_prova, contatore + 1, deep - 1, alpha, beta))
+            if guess_move.check_start_memory(deep) and (val_confronto < valore or valore == - inf) and (guess_move.segno == 'X'):
+                guess_move.add_move(rotta, board, tabella)
+                val_confronto = valore
             del banco_prova
             alpha = max(alpha, valore)
             if beta <= alpha:
                 break
     else:
         valore = inf
-        for coordinata in board.find('O'):
-            for rotta in check_rotte_possibili(board, 'O', coordinata):
-                banco_prova = plancia()
-                banco_prova.plancia = [x for x in board.plancia]
-                banco_prova.posiziona_cacciatore(coordinata, rotta)
-                valore = min(valore, valore_mossa(tabella,
-                                                  banco_prova, contatore + 1, deep - 1, alpha, beta))
-                del banco_prova
-                beta = min(beta, valore)
-                if beta <= alpha:
-                    break
+        val_confronto = valore
+        for mossa in check_rotte_possibili(board, 'O'):
+            banco_prova = plancia()
+            banco_prova.plancia = [x for x in board.plancia]
+            banco_prova.posiziona_cacciatore(mossa[0], mossa[1])
+            valore = min(valore, valore_mossa(guess_move, tabella,
+                                              banco_prova, contatore + 1, deep - 1, alpha, beta))
+            if guess_move.check_start_memory(deep) and (val_confronto > valore or valore == inf) and (guess_move.segno == 'O'):
+                guess_move.add_move(mossa, board, tabella)
+                val_confronto = valore
+            del banco_prova
+            beta = min(beta, valore)
             if beta <= alpha:
                 break
 
@@ -97,25 +113,27 @@ def debug_value(valore, contatore, rotta, coordinata=0):
                   ']:-------->' + str(valore))
 
 
-def scegli_mossa_ai(board, contatore, deep):
+def scegli_mossa_ai(guess_move, board, contatore, deep):
     # Inizializzo la transposition table
     tabella = transposition_table()
+    guess_move.hash_values = tabella.possibilita
     # Devo scegliere la mossa come se fossi il lupo
     # Il lupo vuole massimizzare
     if contatore % 2 == 0:
         if deep % 2 == 0:
             deep -= 1
+        guess_move.initial_deep = deep
         if index_to_coo(board.find('X'))[1] > 2 + max({index_to_coo(hunter)[1] for hunter in board.find('O')}):
             deep = 7
         valore = - inf
-        for rotta in check_rotte_possibili(board, 'X'):
+        for rotta in check_rotte_possibili(board, 'X', guess_move):
             if valore == - inf:
                 mossa_futura = rotta
             start = timer()
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_lupo(rotta)
-            move_power = valore_mossa(tabella,
+            move_power = valore_mossa(guess_move, tabella,
                                       banco_prova, contatore + 1, deep - 1, valore, inf)
             debug_value(move_power, contatore, rotta)
             if valore < move_power:
@@ -132,19 +150,16 @@ def scegli_mossa_ai(board, contatore, deep):
     else:
         if deep % 2 == 1:
             deep -= 1
+        guess_move.initial_deep = deep
         valore = inf
-        pool_mosse = list()
-        for coordinata in board.find('O'):
-            pool_mosse.extend([(coordinata, rotta)
-                               for rotta in check_rotte_possibili(board, 'O', coordinata)])
-        for mossa in pool_mosse:
+        for mossa in check_rotte_possibili(board, 'O', guess_move):
             if valore == inf:
                 mossa_futura = mossa
             start = timer()
             banco_prova = plancia()
             banco_prova.plancia = [x for x in board.plancia]
             banco_prova.posiziona_cacciatore(mossa[0], mossa[1])
-            move_power = valore_mossa(tabella,
+            move_power = valore_mossa(guess_move, tabella,
                                       banco_prova, contatore + 1, deep - 1, - inf, valore)
             debug_value(move_power, contatore, mossa[1], mossa[0])
             if valore > move_power:

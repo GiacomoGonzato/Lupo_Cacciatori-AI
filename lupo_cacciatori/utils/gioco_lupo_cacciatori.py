@@ -1,4 +1,5 @@
 from utils.plancia_lupo_cacciatori import plancia
+from utils.remember_reorder_moves import next_moves
 from utils.ai_lupo_cacciatori import scegli_mossa_ai
 
 
@@ -22,6 +23,8 @@ class lupo_cacciatori():
 
     # Logica di gioco
     def play(self, deep=4):
+        # Inizializzo la memoria per la scelta delle mosse future della AI
+        guess_move = next_moves(deep)
         print('INIZIO DEL GIOCO\n')
         contatore = 0
         computer = 'entra nel loop'
@@ -47,8 +50,9 @@ class lupo_cacciatori():
                         self.plancia.posiziona_lupo(rotta_lupo)
                     # Muove il Cacciatore
                     else:
-                        mossa_cacciatore = scegli_mossa_ai(
-                            self.plancia, contatore, deep)
+                        guess_move.segno = 'O'
+                        mossa_cacciatore = scegli_mossa_ai(guess_move,
+                                                           self.plancia, contatore, deep)
                         self.plancia.posiziona_cacciatore(
                             mossa_cacciatore[0], mossa_cacciatore[1])
                     contatore += 1
@@ -59,8 +63,9 @@ class lupo_cacciatori():
                     self.plancia.stampa_plancia()
                     # Muove per primo il Lupo
                     if contatore % 2 == 0:
-                        rotta_lupo = scegli_mossa_ai(
-                            self.plancia, contatore, deep)
+                        guess_move.segno = 'X'
+                        rotta_lupo = scegli_mossa_ai(guess_move,
+                                                     self.plancia, contatore, deep)
                         self.plancia.posiziona_lupo(rotta_lupo)
                     # Muove il Cacciatore
                     else:
