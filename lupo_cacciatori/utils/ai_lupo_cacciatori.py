@@ -1,6 +1,6 @@
 from utils.plancia_lupo_cacciatori import plancia, index_to_coo
 from utils.transposition_table import transposition_table
-from utils.remember_reorder_moves import next_moves
+from utils.remember_reorder_moves import next_moves, type_table
 from math import *
 from timeit import default_timer as timer
 
@@ -8,23 +8,20 @@ from timeit import default_timer as timer
 def check_rotte_possibili(board, simbolo, guess_move=next_moves(0)):
     rotte_possibili = list()
     if simbolo == 'X':
-        contatore = 0
         rotte_possibili = [rotta for rotta in
                            ['SO', 'SE', 'NE', 'NO'] if not board.check_movimento_lupo(rotta)]
     elif simbolo == 'O':
-        contatore = 1
         cacciatori_ordinati = list(board.find('O'))
         cacciatori_ordinati.sort()
         for hunter in cacciatori_ordinati:
             rotte_possibili.extend([(hunter, rotta) for rotta in
                                     ['NE', 'NO'] if not board.check_movimento_cacciatore(hunter, rotta)])
-    if len(guess_move.hash_values) != 0:
-        hash_value = guess_move.from_board_to_hash(board, contatore)
-        if hash_value in guess_move.move.keys():
-            mossa = guess_move.move[hash_value]
-            if mossa in rotte_possibili:
-                rotte_possibili.remove(mossa)
-                rotte_possibili.insert(0, mossa)
+    if guess_move.segno in {'O', 'X'}:
+        codice_tavolo = type_table(board)
+        if codice_tavolo in guess_move.move.keys():
+            mossa = guess_move.move[codice_tavolo]
+            rotte_possibili.remove(mossa)
+            rotte_possibili.insert(0, mossa)
     return rotte_possibili
 
 
@@ -72,7 +69,7 @@ def valore_mossa(guess_move, tabella, board, contatore, deep, alpha=- inf, beta=
             valore = max(valore, valore_mossa(guess_move, tabella,
                                               banco_prova, contatore + 1, deep - 1, alpha, beta))
             if guess_move.check_start_memory(deep) and (val_confronto < valore or valore == - inf) and (guess_move.segno == 'X'):
-                guess_move.add_move(rotta, board, tabella)
+                guess_move.add_move(rotta, board)
                 val_confronto = valore
             del banco_prova
             alpha = max(alpha, valore)
@@ -88,7 +85,7 @@ def valore_mossa(guess_move, tabella, board, contatore, deep, alpha=- inf, beta=
             valore = min(valore, valore_mossa(guess_move, tabella,
                                               banco_prova, contatore + 1, deep - 1, alpha, beta))
             if guess_move.check_start_memory(deep) and (val_confronto > valore or valore == inf) and (guess_move.segno == 'O'):
-                guess_move.add_move(mossa, board, tabella)
+                guess_move.add_move(mossa, board)
                 val_confronto = valore
             del banco_prova
             beta = min(beta, valore)
@@ -116,7 +113,6 @@ def debug_value(valore, contatore, rotta, coordinata=0):
 def scegli_mossa_ai(guess_move, board, contatore, deep):
     # Inizializzo la transposition table
     tabella = transposition_table()
-    guess_move.hash_values = tabella.possibilita
     # Devo scegliere la mossa come se fossi il lupo
     # Il lupo vuole massimizzare
     if contatore % 2 == 0:
@@ -126,7 +122,10 @@ def scegli_mossa_ai(guess_move, board, contatore, deep):
         if index_to_coo(board.find('X'))[1] > 2 + max({index_to_coo(hunter)[1] for hunter in board.find('O')}):
             deep = 7
         valore = - inf
-        for rotta in check_rotte_possibili(board, 'X', guess_move):
+        possibili_rotte_lupo = check_rotte_possibili(board, 'X', guess_move)
+        if len(possibili_rotte_lupo) == 1:
+            return possibili_rotte_lupo[0]
+        for rotta in possibili_rotte_lupo:
             if valore == - inf:
                 mossa_futura = rotta
             start = timer()

@@ -129,13 +129,7 @@ class plancia():
         if simb == 'X':
             return self.plancia.index('X')
         elif simb == 'O':
-            posti = set()
-            for i in range(64):
-                if self.plancia[i] == 'O':
-                    posti.add(i)
-                if len(posti) == 4:
-                    break
-            return posti
+            return {i for i in range(64) if self.plancia[i] == 'O'}
         else:
             posti = dict()
             posti['X'] = self.find('X')
