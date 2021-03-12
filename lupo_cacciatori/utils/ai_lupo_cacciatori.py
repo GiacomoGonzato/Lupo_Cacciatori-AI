@@ -17,11 +17,11 @@ def check_rotte_possibili(board, simbolo, guess_move=next_moves(0)):
         rotte_possibili = [rotta for rotta in tutte_rotte_lupo
                            if not board.check_movimento_lupo(rotta)]
     elif simbolo == 'O':
-        cacciatori_ordinati = list(board.find('O'))
-        cacciatori_ordinati.sort()
-        for hunter in cacciatori_ordinati:
+        cacciatori = board.find('O')
+        for hunter in cacciatori:
             rotte_possibili.extend([(hunter, rotta) for rotta in ['NE', 'NO']
                                     if not board.check_movimento_cacciatore(hunter, rotta)])
+        shuffle(rotte_possibili)
     if guess_move.segno in {'O', 'X'}:
         codice_tavolo = type_table(board)
         if codice_tavolo in guess_move.move.keys():
